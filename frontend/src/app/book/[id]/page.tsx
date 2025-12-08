@@ -1,25 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Input, Textarea, Select } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 
-// Mock artisan data
-const mockArtisan = {
-  id: 1,
-  fullName: 'Ahmed Ben Ali',
-  city: 'Casablanca',
-  rating: 4.9,
-  totalReviews: 127,
-  isVerified: true,
-  services: [
-    { id: 1, category: 'plumbing', name: 'Plomberie', price: '150-300 MAD/h' },
-    { id: 2, category: 'hvac', name: 'Climatisation', price: '200-400 MAD/h' },
-  ],
+interface Service {
+  _id: string;
+  category: string;
+  name: string;
+  price: string;
+}
+
+interface Artisan {
+  id: string;
+  fullName: string;
+  city: string;
+  rating: number;
+  totalReviews: number;
+  isVerified: boolean;
+  services: Service[];
+}
+
+const categoryIcons: Record<string, string> = {
+  plumbing: '🔧',
+  electrical: '⚡',
+  carpentry: '🪚',
+  painting: '🎨',
+  hvac: '❄️',
+  cleaning: '🧹',
+  gardening: '🌱',
+  masonry: '🧱',
+  locksmith: '🔐',
+  appliance: '🔌',
+  moving: '📦',
+  other: '🔨',
 };
 
 const timeSlots = [
@@ -33,6 +51,8 @@ export default function BookingPage() {
   const router = useRouter();
   const params = useParams();
 
+  const [artisan, setArtisan] = useState<Artisan | null>(null);
+  const [loadingArtisan, setLoadingArtisan] = useState(true);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     serviceId: '',
@@ -43,23 +63,104 @@ export default function BookingPage() {
     urgency: 'normal',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const artisan = mockArtisan;
+  // Fetch artisan data
+  useEffect(() => {
+    const fetchArtisan = async () => {
+      try {
+        const response = await fetch(`/api/artisans/${params.id}`);
+        const data = await response.json();
+        if (data.artisan) {
+          setArtisan(data.artisan);
+        }
+      } catch (error) {
+        console.error('Error fetching artisan:', error);
+      } finally {
+        setLoadingArtisan(false);
+      }
+    };
+
+    if (params.id) {
+      fetchArtisan();
+    }
+  }, [params.id]);
 
   const handleSubmit = async () => {
     if (!user) {
-      router.push('/login');
+      router.push('/login?redirect=/book/' + params.id);
       return;
     }
 
+    if (!artisan) return;
+
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setLoading(false);
-    setStep(4); // Success step
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const selectedService = artisan.services.find(s => s._id === formData.serviceId);
+
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          artisanId: artisan.id,
+          service: {
+            category: selectedService?.category,
+            name: selectedService?.name,
+            price: selectedService?.price,
+          },
+          date: formData.date,
+          time: formData.time,
+          address: formData.address,
+          description: formData.description,
+          urgency: formData.urgency,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la réservation');
+      }
+
+      setStep(4); // Success step
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const selectedService = artisan.services.find(s => s.id.toString() === formData.serviceId);
+  const selectedService = artisan?.services.find(s => s._id === formData.serviceId);
+
+  if (loadingArtisan) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin h-8 w-8 text-emerald-600" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (!artisan) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Artisan non trouvé</h2>
+          <Link href="/artisans" className="text-emerald-600 hover:underline">
+            Retour à la liste des artisans
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -130,6 +231,13 @@ export default function BookingPage() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
+
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Step 1: Service Selection */}
@@ -140,10 +248,10 @@ export default function BookingPage() {
               <div className="space-y-3 mb-6">
                 {artisan.services.map((service) => (
                   <button
-                    key={service.id}
-                    onClick={() => setFormData({ ...formData, serviceId: service.id.toString() })}
+                    key={service._id}
+                    onClick={() => setFormData({ ...formData, serviceId: service._id })}
                     className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                      formData.serviceId === service.id.toString()
+                      formData.serviceId === service._id
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -151,7 +259,7 @@ export default function BookingPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">
-                          {service.category === 'plumbing' ? '🔧' : '❄️'}
+                          {categoryIcons[service.category] || '🔨'}
                         </span>
                         <span className="font-medium text-gray-900">{service.name}</span>
                       </div>
@@ -169,7 +277,7 @@ export default function BookingPage() {
                   {[
                     { value: 'normal', label: 'Normal', desc: 'Dans la semaine' },
                     { value: 'urgent', label: 'Urgent', desc: 'Sous 48h' },
-                    { value: 'emergency', label: 'Urgence', desc: 'Aujourd\'hui' },
+                    { value: 'emergency', label: 'Urgence', desc: "Aujourd'hui" },
                   ].map((opt) => (
                     <button
                       key={opt.value}
@@ -286,12 +394,25 @@ export default function BookingPage() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Date</span>
-                    <span className="font-medium text-gray-900">{formData.date}</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(formData.date).toLocaleDateString('fr-FR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Heure</span>
                   <span className="font-medium text-gray-900">{formData.time}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Urgence</span>
+                  <span className="font-medium text-gray-900">
+                    {formData.urgency === 'normal' ? 'Normal' : formData.urgency === 'urgent' ? 'Urgent' : 'Urgence'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Adresse</span>
@@ -314,6 +435,17 @@ export default function BookingPage() {
                 </p>
               </div>
 
+              {!user && (
+                <div className="bg-blue-50 rounded-xl p-4 mt-4 flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-blue-800">
+                    Vous devez être connecté pour confirmer votre réservation. Vous serez redirigé vers la page de connexion.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-4 mt-8">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
                   Retour
@@ -324,7 +456,7 @@ export default function BookingPage() {
                   onClick={handleSubmit}
                   disabled={loading}
                 >
-                  {loading ? 'Confirmation...' : 'Confirmer la réservation'}
+                  {loading ? 'Confirmation...' : user ? 'Confirmer la réservation' : 'Se connecter et réserver'}
                 </Button>
               </div>
             </div>
@@ -356,13 +488,13 @@ export default function BookingPage() {
                     <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-emerald-600 text-sm font-medium">2</span>
                     </div>
-                    <span className="text-gray-600">Vous pourrez échanger par chat pour plus de détails</span>
+                    <span className="text-gray-600">Vous pourrez suivre le statut dans "Mes réservations"</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-emerald-600 text-sm font-medium">3</span>
                     </div>
-                    <span className="text-gray-600">Après l'intervention, laissez un avis</span>
+                    <span className="text-gray-600">Après l'intervention, laissez un avis pour aider la communauté</span>
                   </li>
                 </ul>
               </div>

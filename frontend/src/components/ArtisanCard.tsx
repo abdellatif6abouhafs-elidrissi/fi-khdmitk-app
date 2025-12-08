@@ -6,13 +6,14 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 
 interface Service {
-  id: number;
+  _id?: string;
   category: string;
   name: string;
+  price?: string;
 }
 
 interface ArtisanCardProps {
-  id: number;
+  id: string | number;
   fullName: string;
   avatar?: string;
   bio?: string;
@@ -110,9 +111,9 @@ export function ArtisanCard({
 
         {/* Services */}
         <div className="mt-4 flex flex-wrap gap-2">
-          {services.slice(0, 3).map((service) => (
+          {services.slice(0, 3).map((service, index) => (
             <span
-              key={service.id}
+              key={service._id || index}
               className="inline-flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-600 text-sm rounded-full"
             >
               <span>{categoryIcons[service.category] || '🔨'}</span>

@@ -1,15 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi } from '@/lib/api';
 
 interface User {
-  id: number;
+  id: string;
   email: string;
-  full_name: string;
+  fullName: string;
+  phone: string;
+  city: string;
   role: 'customer' | 'artisan' | 'admin';
   avatar?: string;
-  preferred_language: string;
+  isVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -31,35 +32,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('token');
     if (token) {
       try {
-        const userData = await authApi.getMe() as User;
-        setUser(userData);
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+            fullName: data.user.fullName,
+            phone: data.user.phone,
+            city: data.user.city,
+            role: data.user.role,
+            avatar: data.user.avatar,
+            isVerified: data.user.isVerified,
+          });
+        } else {
+          localStorage.removeItem('token');
+        }
       } catch (error) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('token');
       }
     }
     setIsLoading(false);
   };
 
   const login = async (email: string, password: string) => {
-    const response = await authApi.login({ email, password });
-    localStorage.setItem('access_token', response.access_token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    const userData = await authApi.getMe() as User;
-    setUser(userData);
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Erreur de connexion');
+    }
+
+    localStorage.setItem('token', data.token);
+    setUser({
+      id: data.user.id,
+      email: data.user.email,
+      fullName: data.user.fullName,
+      phone: data.user.phone,
+      city: data.user.city,
+      role: data.user.role,
+      avatar: data.user.avatar,
+      isVerified: data.user.isVerified,
+    });
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token');
     setUser(null);
   };
 
   const register = async (data: any) => {
-    await authApi.register(data);
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Erreur d\'inscription');
+    }
+
+    localStorage.setItem('token', result.token);
+    setUser({
+      id: result.user.id,
+      email: result.user.email,
+      fullName: result.user.fullName,
+      phone: result.user.phone,
+      city: result.user.city,
+      role: result.user.role,
+    });
   };
 
   return (

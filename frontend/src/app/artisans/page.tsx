@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ArtisanCard } from '@/components/ArtisanCard';
@@ -25,100 +25,29 @@ const categories = [
 
 const cities = [
   { value: '', label: 'Toutes les villes' },
-  { value: 'casablanca', label: 'Casablanca' },
-  { value: 'rabat', label: 'Rabat' },
-  { value: 'marrakech', label: 'Marrakech' },
-  { value: 'fes', label: 'Fès' },
-  { value: 'tangier', label: 'Tanger' },
-  { value: 'agadir', label: 'Agadir' },
-  { value: 'meknes', label: 'Meknès' },
-  { value: 'oujda', label: 'Oujda' },
-  { value: 'kenitra', label: 'Kénitra' },
-  { value: 'tetouan', label: 'Tétouan' },
+  { value: 'Casablanca', label: 'Casablanca' },
+  { value: 'Rabat', label: 'Rabat' },
+  { value: 'Marrakech', label: 'Marrakech' },
+  { value: 'Fès', label: 'Fès' },
+  { value: 'Tanger', label: 'Tanger' },
+  { value: 'Agadir', label: 'Agadir' },
+  { value: 'Meknès', label: 'Meknès' },
+  { value: 'Oujda', label: 'Oujda' },
+  { value: 'Kénitra', label: 'Kénitra' },
+  { value: 'Tétouan', label: 'Tétouan' },
 ];
 
-// Mock data - in production, this would come from the API
-const mockArtisans = [
-  {
-    id: 1,
-    fullName: 'Ahmed Ben Ali',
-    city: 'Casablanca',
-    rating: 4.9,
-    totalReviews: 127,
-    isAvailable: true,
-    isVerified: true,
-    bio: 'Plombier professionnel avec plus de 15 ans d\'expérience. Spécialisé dans les réparations d\'urgence et les installations sanitaires.',
-    services: [
-      { id: 1, category: 'plumbing', name: 'Plomberie' },
-      { id: 2, category: 'hvac', name: 'Climatisation' },
-    ],
-  },
-  {
-    id: 2,
-    fullName: 'Fatima Zahra',
-    city: 'Rabat',
-    rating: 4.8,
-    totalReviews: 98,
-    isAvailable: true,
-    isVerified: true,
-    bio: 'Électricienne certifiée. Travaux électriques résidentiels et commerciaux. Disponible 7j/7.',
-    services: [
-      { id: 3, category: 'electrical', name: 'Électricité' },
-    ],
-  },
-  {
-    id: 3,
-    fullName: 'Youssef El Amrani',
-    city: 'Marrakech',
-    rating: 4.7,
-    totalReviews: 85,
-    isAvailable: false,
-    isVerified: false,
-    bio: 'Menuisier artisan. Fabrication de meubles sur mesure et restauration de pièces anciennes.',
-    services: [
-      { id: 4, category: 'carpentry', name: 'Menuiserie' },
-    ],
-  },
-  {
-    id: 4,
-    fullName: 'Khadija Bennani',
-    city: 'Fès',
-    rating: 4.9,
-    totalReviews: 156,
-    isAvailable: true,
-    isVerified: true,
-    bio: 'Service de nettoyage professionnel pour particuliers et entreprises. Produits écologiques.',
-    services: [
-      { id: 5, category: 'cleaning', name: 'Nettoyage' },
-    ],
-  },
-  {
-    id: 5,
-    fullName: 'Mohamed Alaoui',
-    city: 'Casablanca',
-    rating: 4.6,
-    totalReviews: 72,
-    isAvailable: true,
-    isVerified: true,
-    bio: 'Peintre décorateur. Peinture intérieure, extérieure et décoration murale personnalisée.',
-    services: [
-      { id: 6, category: 'painting', name: 'Peinture' },
-    ],
-  },
-  {
-    id: 6,
-    fullName: 'Rachid Tahiri',
-    city: 'Tangier',
-    rating: 4.8,
-    totalReviews: 94,
-    isAvailable: true,
-    isVerified: true,
-    bio: 'Maçon qualifié. Construction, rénovation et travaux de gros œuvre.',
-    services: [
-      { id: 7, category: 'masonry', name: 'Maçonnerie' },
-    ],
-  },
-];
+interface Artisan {
+  id: string;
+  fullName: string;
+  city: string;
+  rating: number;
+  totalReviews: number;
+  isAvailable: boolean;
+  isVerified: boolean;
+  bio: string;
+  services: { category: string; name: string; price: string; _id: string }[];
+}
 
 function ArtisansContent() {
   const { t } = useLanguage();
@@ -132,43 +61,35 @@ function ArtisansContent() {
     availableOnly: false,
   });
 
-  const [artisans, setArtisans] = useState(mockArtisans);
-  const [loading, setLoading] = useState(false);
+  const [artisans, setArtisans] = useState<Artisan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter artisans
-  useEffect(() => {
-    let filtered = [...mockArtisans];
+  // Fetch artisans from API
+  const fetchArtisans = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.category) params.append('category', filters.category);
+      if (filters.city) params.append('city', filters.city);
+      if (filters.search) params.append('search', filters.search);
+      if (filters.minRating) params.append('minRating', filters.minRating);
+      if (filters.availableOnly) params.append('available', 'true');
 
-    if (filters.search) {
-      filtered = filtered.filter(a =>
-        a.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        a.bio?.toLowerCase().includes(filters.search.toLowerCase())
-      );
+      const response = await fetch(`/api/artisans?${params.toString()}`);
+      const data = await response.json();
+      setArtisans(data.artisans || []);
+    } catch (error) {
+      console.error('Error fetching artisans:', error);
+      setArtisans([]);
+    } finally {
+      setLoading(false);
     }
-
-    if (filters.category) {
-      filtered = filtered.filter(a =>
-        a.services.some(s => s.category === filters.category)
-      );
-    }
-
-    if (filters.city) {
-      filtered = filtered.filter(a =>
-        a.city.toLowerCase() === filters.city.toLowerCase()
-      );
-    }
-
-    if (filters.minRating) {
-      filtered = filtered.filter(a => a.rating >= parseFloat(filters.minRating));
-    }
-
-    if (filters.availableOnly) {
-      filtered = filtered.filter(a => a.isAvailable);
-    }
-
-    setArtisans(filtered);
   }, [filters]);
+
+  useEffect(() => {
+    fetchArtisans();
+  }, [fetchArtisans]);
 
   const clearFilters = () => {
     setFilters({

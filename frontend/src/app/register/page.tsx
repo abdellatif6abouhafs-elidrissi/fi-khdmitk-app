@@ -79,25 +79,58 @@ function RegisterContent() {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères');
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    if (role === 'artisan' && formData.services.length === 0) {
+      setError('Veuillez sélectionner au moins un service');
       return;
     }
 
     setLoading(true);
 
     try {
-      await register({
-        full_name: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        city: formData.city,
-        role: role,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          city: formData.city,
+          role: role,
+          // Artisan specific - services as array of category strings
+          bio: role === 'artisan' ? formData.bio : undefined,
+          experience: role === 'artisan' ? parseInt(formData.experience) || 0 : undefined,
+          services: role === 'artisan' ? formData.services : undefined,
+        }),
       });
-      router.push('/');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Une erreur est survenue');
+      }
+
+      // Save token and redirect
+      localStorage.setItem('token', data.token);
+
+      // Redirect based on role
+      if (role === 'artisan') {
+        router.push('/dashboard');
+      } else {
+        router.push('/');
+      }
+
+      // Force page reload to update auth state
+      window.location.reload();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Une erreur est survenue');
+      setError(err.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }

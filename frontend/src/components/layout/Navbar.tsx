@@ -61,7 +61,7 @@ export function Navbar() {
                 >
                   <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center">
                     <span className="text-emerald-600 font-medium">
-                      {user.full_name.charAt(0)}
+                      {user.fullName.charAt(0)}
                     </span>
                   </div>
                 </button>

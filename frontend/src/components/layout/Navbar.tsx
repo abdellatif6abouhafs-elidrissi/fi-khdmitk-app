@@ -73,23 +73,40 @@ export function Navbar() {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="font-medium text-gray-900 truncate">{user.fullName}</p>
+                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                    </div>
                     <Link
                       href="/profile"
                       className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                      onClick={() => setIsProfileOpen(false)}
                     >
                       {t('profile')}
+                    </Link>
+                    <Link
+                      href="/bookings"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      {t('bookings')}
                     </Link>
                     {user.role === 'artisan' && (
                       <Link
                         href="/dashboard"
                         className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsProfileOpen(false)}
                       >
                         Dashboard
                       </Link>
                     )}
+                    <hr className="my-1 border-gray-100" />
                     <button
-                      onClick={logout}
+                      onClick={() => {
+                        logout();
+                        setIsProfileOpen(false);
+                      }}
                       className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50"
                     >
                       {t('logout')}
@@ -143,7 +160,39 @@ export function Navbar() {
               <Link href="/contact" className="text-gray-600 hover:text-emerald-600">
                 {t('contact')}
               </Link>
-              {!user && (
+              {user ? (
+                <div className="pt-4 border-t border-gray-100 space-y-2">
+                  <div className="flex items-center gap-3 pb-2">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <span className="text-emerald-600 font-medium">{user.fullName.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{user.fullName}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <Link href="/profile" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
+                    {t('profile')}
+                  </Link>
+                  <Link href="/bookings" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
+                    {t('bookings')}
+                  </Link>
+                  {user.role === 'artisan' && (
+                    <Link href="/dashboard" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
+                      Dashboard
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left text-red-600 hover:text-red-700 pt-2"
+                  >
+                    {t('logout')}
+                  </button>
+                </div>
+              ) : (
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                   <Link href="/login" className="flex-1">
                     <Button variant="outline" className="w-full">{t('login')}</Button>

@@ -50,15 +50,29 @@ export async function POST(request: NextRequest) {
 
     // If artisan, create artisan profile
     if (role === 'artisan') {
+      // Handle services - can be strings (category IDs) or objects
+      const processedServices = services?.map((s: string | { category: string; name?: string; price?: string }) => {
+        if (typeof s === 'string') {
+          return {
+            category: s,
+            name: categoryLabels[s] || s,
+            price: '150-300 MAD/h',
+          };
+        } else {
+          // It's already an object
+          return {
+            category: s.category,
+            name: s.name || categoryLabels[s.category] || s.category,
+            price: s.price || '150-300 MAD/h',
+          };
+        }
+      }) || [];
+
       await Artisan.create({
         user: user._id,
         bio: bio || '',
         experience: experience || 0,
-        services: services?.map((s: string) => ({
-          category: s,
-          name: categoryLabels[s] || s,
-          price: '150-300 MAD/h',
-        })) || [],
+        services: processedServices,
       });
     }
 

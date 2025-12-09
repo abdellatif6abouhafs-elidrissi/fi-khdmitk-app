@@ -35,6 +35,12 @@ export function Navbar() {
             <Link href="/services" className="text-gray-600 hover:text-emerald-600 transition-colors">
               {t('services')}
             </Link>
+            <Link href="/about" className="text-gray-600 hover:text-emerald-600 transition-colors">
+              {t('about')}
+            </Link>
+            <Link href="/contact" className="text-gray-600 hover:text-emerald-600 transition-colors">
+              {t('contact')}
+            </Link>
             {user && (
               <Link href="/bookings" className="text-gray-600 hover:text-emerald-600 transition-colors">
                 {t('bookings')}
@@ -130,6 +136,12 @@ export function Navbar() {
               </Link>
               <Link href="/services" className="text-gray-600 hover:text-emerald-600">
                 {t('services')}
+              </Link>
+              <Link href="/about" className="text-gray-600 hover:text-emerald-600">
+                {t('about')}
+              </Link>
+              <Link href="/contact" className="text-gray-600 hover:text-emerald-600">
+                {t('contact')}
               </Link>
               {!user && (
                 <div className="flex gap-3 pt-4 border-t border-gray-100">

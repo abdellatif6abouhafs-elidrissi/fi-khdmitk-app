@@ -1,68 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 
-// Mock data - in production, fetch from API
-const mockArtisan = {
-  id: 1,
-  fullName: 'Ahmed Ben Ali',
-  city: 'Casablanca',
-  phone: '+212 6XX XXX XXX',
-  email: 'ahmed@example.com',
-  rating: 4.9,
-  totalReviews: 127,
-  isAvailable: true,
-  isVerified: true,
-  bio: 'Plombier professionnel avec plus de 15 ans d\'expérience dans le domaine. Spécialisé dans les réparations d\'urgence, les installations sanitaires et la maintenance préventive. Je m\'engage à fournir un service de qualité avec des tarifs transparents.',
-  experience: 15,
-  completedJobs: 245,
-  responseTime: '< 1 heure',
-  services: [
-    { id: 1, category: 'plumbing', name: 'Plomberie', price: '150-300 MAD/h' },
-    { id: 2, category: 'hvac', name: 'Climatisation', price: '200-400 MAD/h' },
-  ],
-  portfolio: [
-    { id: 1, image: '/portfolio/1.jpg', title: 'Rénovation salle de bain' },
-    { id: 2, image: '/portfolio/2.jpg', title: 'Installation chauffe-eau' },
-    { id: 3, image: '/portfolio/3.jpg', title: 'Réparation fuite' },
-  ],
-  availability: {
-    monday: '08:00 - 18:00',
-    tuesday: '08:00 - 18:00',
-    wednesday: '08:00 - 18:00',
-    thursday: '08:00 - 18:00',
-    friday: '08:00 - 18:00',
-    saturday: '09:00 - 14:00',
-    sunday: 'Fermé',
-  },
-  reviews: [
-    {
-      id: 1,
-      userName: 'Sara M.',
-      rating: 5,
-      comment: 'Excellent travail ! Ahmed est arrivé à l\'heure et a résolu mon problème de fuite rapidement. Je recommande vivement.',
-      date: '2024-01-15',
-    },
-    {
-      id: 2,
-      userName: 'Karim L.',
-      rating: 5,
-      comment: 'Très professionnel et propre. Les prix sont corrects et le travail de qualité.',
-      date: '2024-01-10',
-    },
-    {
-      id: 3,
-      userName: 'Nadia B.',
-      rating: 4,
-      comment: 'Bon service, a bien réparé ma plomberie. Un peu en retard mais bon travail.',
-      date: '2024-01-05',
-    },
-  ],
-};
+interface Artisan {
+  id: string;
+  fullName: string;
+  city: string;
+  phone?: string;
+  email?: string;
+  rating: number;
+  totalReviews: number;
+  isAvailable: boolean;
+  isVerified: boolean;
+  bio?: string;
+  experience: number;
+  completedJobs: number;
+  responseTime?: string;
+  services: { category: string; name: string; price?: string }[];
+  portfolio?: { image: string; title: string }[];
+  availability?: Record<string, string>;
+  reviews?: {
+    id: string;
+    userName: string;
+    rating: number;
+    comment: string;
+    date: string;
+  }[];
+}
 
 const categoryIcons: Record<string, string> = {
   plumbing: '🔧',
@@ -79,13 +46,60 @@ const categoryIcons: Record<string, string> = {
   other: '🔨',
 };
 
-export default function ArtisanProfilePage() {
-  const { t } = useLanguage();
-  const params = useParams();
-  const [activeTab, setActiveTab] = useState<'about' | 'portfolio' | 'reviews'>('about');
+const categoryLabels: Record<string, string> = {
+  plumbing: 'Plomberie',
+  electrical: 'Électricité',
+  carpentry: 'Menuiserie',
+  painting: 'Peinture',
+  hvac: 'Climatisation',
+  cleaning: 'Nettoyage',
+  gardening: 'Jardinage',
+  masonry: 'Maçonnerie',
+  locksmith: 'Serrurerie',
+  appliance: 'Électroménager',
+  moving: 'Déménagement',
+  other: 'Autre',
+};
 
-  // In production, fetch artisan by params.id
-  const artisan = mockArtisan;
+const defaultAvailability = {
+  Lundi: '08:00 - 18:00',
+  Mardi: '08:00 - 18:00',
+  Mercredi: '08:00 - 18:00',
+  Jeudi: '08:00 - 18:00',
+  Vendredi: '08:00 - 18:00',
+  Samedi: '09:00 - 14:00',
+  Dimanche: 'Fermé',
+};
+
+export default function ArtisanProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useLanguage();
+  const resolvedParams = use(params);
+  const [activeTab, setActiveTab] = useState<'about' | 'portfolio' | 'reviews'>('about');
+  const [artisan, setArtisan] = useState<Artisan | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchArtisan = async () => {
+      try {
+        const response = await fetch(`/api/artisans/${resolvedParams.id}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || 'Artisan non trouvé');
+          return;
+        }
+
+        setArtisan(data.artisan);
+      } catch (err) {
+        setError('Erreur de chargement');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArtisan();
+  }, [resolvedParams.id]);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -100,12 +114,41 @@ export default function ArtisanProfilePage() {
     ));
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin h-12 w-12 text-emerald-600" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (error || !artisan) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{error || 'Artisan non trouvé'}</h2>
+          <Link href="/artisans">
+            <Button variant="primary">Retour à la liste</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 pt-8 pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/artisans" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-8">
+          <Link href="/artisans" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-8 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -122,11 +165,11 @@ export default function ArtisanProfilePage() {
             <div className="flex flex-col sm:flex-row gap-6">
               {/* Avatar */}
               <div className="relative">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-4xl sm:text-5xl font-bold">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-4xl sm:text-5xl font-bold shadow-lg">
                   {artisan.fullName.charAt(0)}
                 </div>
                 {artisan.isAvailable && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-4 border-white" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-4 border-white" title="Disponible" />
                 )}
               </div>
 
@@ -134,10 +177,10 @@ export default function ArtisanProfilePage() {
               <div className="flex-1">
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{artisan.fullName}</h1>
                       {artisan.isVerified && (
-                        <svg className="w-6 h-6 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-6 h-6 text-emerald-500" fill="currentColor" viewBox="0 0 20 20" title="Vérifié">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -151,18 +194,22 @@ export default function ArtisanProfilePage() {
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex">{renderStars(artisan.rating)}</div>
-                      <span className="font-semibold">{artisan.rating}</span>
+                      <span className="font-semibold">{artisan.rating.toFixed(1)}</span>
                       <span className="text-gray-400">({artisan.totalReviews} avis)</span>
                     </div>
                   </div>
 
                   <div className="flex gap-3">
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      Contacter
-                    </Button>
+                    {artisan.phone && (
+                      <a href={`tel:${artisan.phone}`}>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          Appeler
+                        </Button>
+                      </a>
+                    )}
                     <Link href={`/book/${artisan.id}`}>
                       <Button variant="primary">{t('bookNow')}</Button>
                     </Link>
@@ -180,7 +227,7 @@ export default function ArtisanProfilePage() {
                     <p className="text-sm text-gray-500">Travaux réalisés</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{artisan.responseTime}</p>
+                    <p className="text-2xl font-bold text-gray-900">{artisan.responseTime || '< 1h'}</p>
                     <p className="text-sm text-gray-500">Temps de réponse</p>
                   </div>
                 </div>
@@ -218,23 +265,27 @@ export default function ArtisanProfilePage() {
                   {/* Bio */}
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">Description</h2>
-                    <p className="text-gray-600 leading-relaxed">{artisan.bio}</p>
+                    <p className="text-gray-600 leading-relaxed">
+                      {artisan.bio || 'Artisan professionnel disponible pour tous vos travaux.'}
+                    </p>
                   </div>
 
                   {/* Services */}
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Services proposés</h2>
                     <div className="space-y-3">
-                      {artisan.services.map((service) => (
+                      {artisan.services.map((service, index) => (
                         <div
-                          key={service.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                          key={index}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="text-2xl">{categoryIcons[service.category]}</span>
-                            <span className="font-medium text-gray-900">{service.name}</span>
+                            <span className="text-2xl">{categoryIcons[service.category] || '🔨'}</span>
+                            <span className="font-medium text-gray-900">
+                              {categoryLabels[service.category] || service.name}
+                            </span>
                           </div>
-                          <span className="text-emerald-600 font-medium">{service.price}</span>
+                          <span className="text-emerald-600 font-medium">{service.price || 'Sur devis'}</span>
                         </div>
                       ))}
                     </div>
@@ -247,9 +298,9 @@ export default function ArtisanProfilePage() {
                   <div className="bg-gray-50 rounded-xl p-6">
                     <h3 className="font-semibold text-gray-900 mb-4">Disponibilité</h3>
                     <div className="space-y-2 text-sm">
-                      {Object.entries(artisan.availability).map(([day, hours]) => (
+                      {Object.entries(defaultAvailability).map(([day, hours]) => (
                         <div key={day} className="flex justify-between">
-                          <span className="text-gray-500 capitalize">{day}</span>
+                          <span className="text-gray-500">{day}</span>
                           <span className={hours === 'Fermé' ? 'text-red-500' : 'text-gray-900'}>
                             {hours}
                           </span>
@@ -262,24 +313,28 @@ export default function ArtisanProfilePage() {
                   <div className="bg-emerald-50 rounded-xl p-6">
                     <h3 className="font-semibold text-gray-900 mb-4">Contact</h3>
                     <div className="space-y-3">
-                      <a
-                        href={`tel:${artisan.phone}`}
-                        className="flex items-center gap-3 text-gray-600 hover:text-emerald-600"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                        {artisan.phone}
-                      </a>
-                      <a
-                        href={`mailto:${artisan.email}`}
-                        className="flex items-center gap-3 text-gray-600 hover:text-emerald-600"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        {artisan.email}
-                      </a>
+                      {artisan.phone && (
+                        <a
+                          href={`tel:${artisan.phone}`}
+                          className="flex items-center gap-3 text-gray-600 hover:text-emerald-600 transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          {artisan.phone}
+                        </a>
+                      )}
+                      {artisan.email && (
+                        <a
+                          href={`mailto:${artisan.email}`}
+                          className="flex items-center gap-3 text-gray-600 hover:text-emerald-600 transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          {artisan.email}
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -288,47 +343,74 @@ export default function ArtisanProfilePage() {
 
             {/* Portfolio Tab */}
             {activeTab === 'portfolio' && (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {artisan.portfolio.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden cursor-pointer"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-                      <span className="text-6xl">🔧</span>
-                    </div>
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                      <p className="text-white font-medium">{item.title}</p>
-                    </div>
+              <div>
+                {artisan.portfolio && artisan.portfolio.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {artisan.portfolio.map((item, index) => (
+                      <div
+                        key={index}
+                        className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden cursor-pointer"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+                          <span className="text-6xl">{categoryIcons[artisan.services[0]?.category] || '🔧'}</span>
+                        </div>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                          <p className="text-white font-medium">{item.title}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">Aucune photo dans le portfolio pour le moment</p>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
-              <div className="space-y-6">
-                {artisan.reviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 font-medium">{review.userName.charAt(0)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900">{review.userName}</p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              {renderStars(review.rating)}
-                            </div>
+              <div>
+                {artisan.reviews && artisan.reviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {artisan.reviews.map((review) => (
+                      <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-gray-600 font-medium">{review.userName.charAt(0)}</span>
                           </div>
-                          <span className="text-sm text-gray-400">{review.date}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <p className="font-medium text-gray-900">{review.userName}</p>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {renderStars(review.rating)}
+                                </div>
+                              </div>
+                              <span className="text-sm text-gray-400">{review.date}</span>
+                            </div>
+                            <p className="text-gray-600 mt-2">{review.comment}</p>
+                          </div>
                         </div>
-                        <p className="text-gray-600 mt-2">{review.comment}</p>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">Aucun avis pour le moment</p>
+                    <p className="text-sm text-gray-400 mt-1">Soyez le premier à laisser un avis!</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

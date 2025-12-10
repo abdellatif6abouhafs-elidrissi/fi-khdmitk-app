@@ -95,8 +95,8 @@ export default function Home() {
                 className="group"
               >
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
-                  <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center shadow-lg`}>
-                    <ServiceIcon category={category.id} className="w-7 h-7 text-white" />
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gray-50 flex items-center justify-center shadow-md border border-gray-100">
+                    <ServiceIcon category={category.id} className="w-10 h-10" />
                   </div>
                   <p className="font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
                     {t(category.id as any)}

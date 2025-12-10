@@ -30,8 +30,8 @@ export default function ServicesPage() {
             >
               <div className={`${service.bgColor} rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-transparent hover:border-emerald-200`}>
                 <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg`}>
-                    <ServiceIcon category={service.id} className="w-7 h-7 text-white" />
+                  <div className="w-16 h-16 rounded-xl bg-white shadow-lg flex items-center justify-center border border-gray-100">
+                    <ServiceIcon category={service.id} className="w-12 h-12" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">

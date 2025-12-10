@@ -5,21 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-
-const categories = [
-  { id: 'plumbing', icon: '🔧', color: 'from-blue-500 to-blue-600' },
-  { id: 'electrical', icon: '⚡', color: 'from-amber-500 to-amber-600' },
-  { id: 'carpentry', icon: '🪚', color: 'from-orange-500 to-orange-600' },
-  { id: 'painting', icon: '🎨', color: 'from-pink-500 to-pink-600' },
-  { id: 'hvac', icon: '❄️', color: 'from-cyan-500 to-cyan-600' },
-  { id: 'cleaning', icon: '🧹', color: 'from-teal-500 to-teal-600' },
-  { id: 'gardening', icon: '🌱', color: 'from-green-500 to-green-600' },
-  { id: 'masonry', icon: '🧱', color: 'from-red-500 to-red-600' },
-  { id: 'locksmith', icon: '🔐', color: 'from-gray-500 to-gray-600' },
-  { id: 'appliance', icon: '🔌', color: 'from-purple-500 to-purple-600' },
-  { id: 'moving', icon: '📦', color: 'from-indigo-500 to-indigo-600' },
-  { id: 'other', icon: '🔨', color: 'from-slate-500 to-slate-600' },
-];
+import { ServiceIcon, serviceCategories } from '@/components/ServiceIcon';
 
 const featuredArtisans = [
   { id: 1, name: 'Ahmed Ben Ali', city: 'Casablanca', rating: 4.9, reviews: 127, category: 'plumbing', verified: true },
@@ -102,15 +88,15 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {categories.map((category) => (
+            {serviceCategories.map((category) => (
               <Link
                 key={category.id}
                 href={`/artisans?category=${category.id}`}
                 className="group"
               >
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
-                  <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-2xl shadow-lg`}>
-                    {category.icon}
+                  <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center shadow-lg`}>
+                    <ServiceIcon category={category.id} className="w-7 h-7 text-white" />
                   </div>
                   <p className="font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
                     {t(category.id as any)}
@@ -136,40 +122,44 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredArtisans.map((artisan) => (
-              <Link key={artisan.id} href={`/artisans/${artisan.id}`}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                      {artisan.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1">
-                        <h3 className="font-semibold text-gray-900">{artisan.name}</h3>
-                        {artisan.verified && (
-                          <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        )}
+            {featuredArtisans.map((artisan) => {
+              const category = serviceCategories.find(c => c.id === artisan.category);
+              return (
+                <Link key={artisan.id} href={`/artisans/${artisan.id}`}>
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                        {artisan.name.charAt(0)}
                       </div>
-                      <p className="text-sm text-gray-500">{artisan.city}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <h3 className="font-semibold text-gray-900">{artisan.name}</h3>
+                          {artisan.verified && (
+                            <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{artisan.city}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-3 py-1.5 ${category?.bgColor || 'bg-gray-100'} text-gray-700 text-sm rounded-full flex items-center gap-1.5`}>
+                        <ServiceIcon category={artisan.category} className="w-4 h-4" />
+                        {t(artisan.category as any)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className="font-medium">{artisan.rating}</span>
+                        <span className="text-gray-400 text-sm">({artisan.reviews})</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
-                      {categories.find(c => c.id === artisan.category)?.icon} {t(artisan.category as any)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span className="font-medium">{artisan.rating}</span>
-                      <span className="text-gray-400 text-sm">({artisan.reviews})</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -186,12 +176,39 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: 1, title: 'Recherchez', desc: 'Trouvez le service dont vous avez besoin dans votre ville', icon: '🔍' },
-              { step: 2, title: 'Comparez', desc: 'Consultez les profils, avis et tarifs des artisans', icon: '⚖️' },
-              { step: 3, title: 'Réservez', desc: 'Prenez rendez-vous en quelques clics', icon: '✅' },
+              {
+                step: 1,
+                title: 'Recherchez',
+                desc: 'Trouvez le service dont vous avez besoin dans votre ville',
+                icon: (
+                  <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )
+              },
+              {
+                step: 2,
+                title: 'Comparez',
+                desc: 'Consultez les profils, avis et tarifs des artisans',
+                icon: (
+                  <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                )
+              },
+              {
+                step: 3,
+                title: 'Réservez',
+                desc: 'Prenez rendez-vous en quelques clics',
+                icon: (
+                  <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )
+              },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-emerald-100 flex items-center justify-center text-4xl">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-emerald-100 flex items-center justify-center">
                   {item.icon}
                 </div>
                 <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-600 text-white font-bold mb-4">

@@ -2,93 +2,7 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
-
-const services = [
-  {
-    id: 'plumbing',
-    icon: '🔧',
-    color: 'from-blue-500 to-blue-600',
-    bgColor: 'bg-blue-50',
-    description: 'Installation, réparation de fuites, débouchage, chauffe-eau, robinetterie',
-  },
-  {
-    id: 'electrical',
-    icon: '⚡',
-    color: 'from-amber-500 to-amber-600',
-    bgColor: 'bg-amber-50',
-    description: 'Installation électrique, dépannage, mise aux normes, éclairage',
-  },
-  {
-    id: 'carpentry',
-    icon: '🪚',
-    color: 'from-orange-500 to-orange-600',
-    bgColor: 'bg-orange-50',
-    description: 'Meubles sur mesure, portes, fenêtres, parquet, escaliers',
-  },
-  {
-    id: 'painting',
-    icon: '🎨',
-    color: 'from-pink-500 to-pink-600',
-    bgColor: 'bg-pink-50',
-    description: 'Peinture intérieure et extérieure, décoration, revêtements muraux',
-  },
-  {
-    id: 'hvac',
-    icon: '❄️',
-    color: 'from-cyan-500 to-cyan-600',
-    bgColor: 'bg-cyan-50',
-    description: 'Installation et entretien climatisation, chauffage, ventilation',
-  },
-  {
-    id: 'cleaning',
-    icon: '🧹',
-    color: 'from-teal-500 to-teal-600',
-    bgColor: 'bg-teal-50',
-    description: 'Nettoyage maison, bureaux, après travaux, vitres, tapis',
-  },
-  {
-    id: 'gardening',
-    icon: '🌱',
-    color: 'from-green-500 to-green-600',
-    bgColor: 'bg-green-50',
-    description: 'Entretien jardin, taille, plantation, arrosage automatique',
-  },
-  {
-    id: 'masonry',
-    icon: '🧱',
-    color: 'from-red-500 to-red-600',
-    bgColor: 'bg-red-50',
-    description: 'Construction, rénovation, carrelage, façade, gros œuvre',
-  },
-  {
-    id: 'locksmith',
-    icon: '🔐',
-    color: 'from-gray-500 to-gray-600',
-    bgColor: 'bg-gray-100',
-    description: 'Ouverture de porte, changement de serrure, blindage, coffres-forts',
-  },
-  {
-    id: 'appliance',
-    icon: '🔌',
-    color: 'from-purple-500 to-purple-600',
-    bgColor: 'bg-purple-50',
-    description: 'Réparation électroménager, machine à laver, frigo, four',
-  },
-  {
-    id: 'moving',
-    icon: '📦',
-    color: 'from-indigo-500 to-indigo-600',
-    bgColor: 'bg-indigo-50',
-    description: 'Déménagement, transport de meubles, montage et démontage',
-  },
-  {
-    id: 'other',
-    icon: '🔨',
-    color: 'from-slate-500 to-slate-600',
-    bgColor: 'bg-slate-50',
-    description: 'Autres services de bricolage et réparation à domicile',
-  },
-];
+import { ServiceIcon, serviceCategories } from '@/components/ServiceIcon';
 
 export default function ServicesPage() {
   const { t } = useLanguage();
@@ -108,7 +22,7 @@ export default function ServicesPage() {
       {/* Services Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
+          {serviceCategories.map((service) => (
             <Link
               key={service.id}
               href={`/artisans?category=${service.id}`}
@@ -116,8 +30,8 @@ export default function ServicesPage() {
             >
               <div className={`${service.bgColor} rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-transparent hover:border-emerald-200`}>
                 <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center text-2xl shadow-lg`}>
-                    {service.icon}
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg`}>
+                    <ServiceIcon category={service.id} className="w-7 h-7 text-white" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">

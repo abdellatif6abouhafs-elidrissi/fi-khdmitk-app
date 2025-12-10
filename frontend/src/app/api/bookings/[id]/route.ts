@@ -47,24 +47,19 @@ export async function PATCH(
       return NextResponse.json({ error: 'Réservation non trouvée' }, { status: 404 });
     }
 
+    let updatedArtisan = null;
+
     // Update status
     if (status) {
       booking.status = status;
 
       // If completed, increment artisan's completed jobs
       if (status === 'completed') {
-        console.log('Completing booking, artisan ID:', booking.artisan);
-        
-        const updatedArtisan = await Artisan.findByIdAndUpdate(
+        updatedArtisan = await Artisan.findByIdAndUpdate(
           booking.artisan,
           { $inc: { completedJobs: 1 } },
           { new: true }
         );
-        
-        console.log('Updated artisan:', updatedArtisan ? {
-          id: updatedArtisan._id,
-          completedJobs: updatedArtisan.completedJobs
-        } : 'NOT FOUND');
       }
     }
 
@@ -86,20 +81,30 @@ export async function PATCH(
       const reviews = await Review.find({ artisan: booking.artisan });
       const avgRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
 
-      await Artisan.findByIdAndUpdate(booking.artisan, {
-        rating: Math.round(avgRating * 10) / 10,
-        totalReviews: reviews.length,
-      });
+      updatedArtisan = await Artisan.findByIdAndUpdate(
+        booking.artisan,
+        {
+          rating: Math.round(avgRating * 10) / 10,
+          totalReviews: reviews.length,
+        },
+        { new: true }
+      );
     }
 
     await booking.save();
 
+    // Return updated artisan stats for frontend to use
     return NextResponse.json({
       message: 'Réservation mise à jour',
       booking: {
         id: booking._id,
         status: booking.status,
       },
+      artisan: updatedArtisan ? {
+        completedJobs: updatedArtisan.completedJobs,
+        rating: updatedArtisan.rating,
+        totalReviews: updatedArtisan.totalReviews,
+      } : null,
     });
   } catch (error: any) {
     console.error('Update booking error:', error);

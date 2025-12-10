@@ -166,14 +166,15 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         // Update local bookings state
         setBookings(prev => prev.map(b =>
           b.id === bookingId ? { ...b, status: newStatus } : b
         ));
 
         // If completed, increment local completedJobs counter
-        if (newStatus === 'completed') {
-          setProfile(prev => prev ? { ...prev, completedJobs: (prev.completedJobs || 0) + 1 } : null);
+        if (newStatus === 'completed' && data.artisan) {
+          setProfile(prev => prev ? { ...prev, completedJobs: data.artisan.completedJobs, rating: data.artisan.rating, totalReviews: data.artisan.totalReviews } : null);
         }
       }
     } catch (error) {
@@ -198,6 +199,7 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         setProfile(prev => prev ? { ...prev, isAvailable: !prev.isAvailable } : null);
       }
     } catch (error) {
@@ -234,6 +236,7 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         const data = await response.json();
         setProfile(prev => prev ? {
           ...prev,

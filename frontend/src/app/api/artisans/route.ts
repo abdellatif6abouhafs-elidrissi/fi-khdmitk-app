@@ -7,6 +7,9 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
+    // Ensure User model is registered for populate
+    void User;
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const city = searchParams.get('city');

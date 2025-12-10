@@ -48,7 +48,7 @@ export default function ContactPage() {
         </svg>
       ),
       title: 'Téléphone',
-      content: '+212 5 22 XX XX XX',
+      content: '+212 625 034 547',
       subContent: 'Lun-Ven: 9h-18h',
     },
     {
@@ -58,7 +58,7 @@ export default function ContactPage() {
         </svg>
       ),
       title: 'Email',
-      content: 'contact@fi-khidmatik.ma',
+      content: 'alleabdo301@gmail.com',
       subContent: 'Réponse sous 24h',
     },
     {
@@ -68,7 +68,7 @@ export default function ContactPage() {
         </svg>
       ),
       title: 'WhatsApp',
-      content: '+212 6 XX XX XX XX',
+      content: '+212 625 034 547',
       subContent: 'Support instantané',
     },
   ];

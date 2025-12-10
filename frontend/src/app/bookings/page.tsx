@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { ReviewModal } from '@/components/ReviewModal';
 
 interface Booking {
   id: string;
@@ -15,6 +16,7 @@ interface Booking {
     city: string;
     phone?: string;
   };
+  artisanId?: string;
   service: {
     category: string;
     name: string;
@@ -26,6 +28,7 @@ interface Booking {
   address: string;
   description?: string;
   urgency?: string;
+  rating?: number;
   createdAt: string;
 }
 
@@ -60,6 +63,10 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [reviewModal, setReviewModal] = useState<{ isOpen: boolean; booking: Booking | null }>({
+    isOpen: false,
+    booking: null,
+  });
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -110,6 +117,38 @@ export default function BookingsPage() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleSubmitReview = async (rating: number, comment: string) => {
+    const token = localStorage.getItem('token');
+    if (!token || !reviewModal.booking) return;
+
+    const booking = reviewModal.booking;
+    const artisanId = booking.artisanId || booking.artisan?.id;
+
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        bookingId: booking.id,
+        artisanId,
+        rating,
+        comment,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Erreur lors de l\'envoi');
+    }
+
+    // Update booking in local state to show it's been reviewed
+    setBookings(prev => prev.map(b =>
+      b.id === booking.id ? { ...b, rating } : b
+    ));
   };
 
   const filteredBookings = filter === 'all'
@@ -274,8 +313,22 @@ export default function BookingsPage() {
                         {actionLoading === booking.id ? 'Annulation...' : 'Annuler'}
                       </Button>
                     )}
-                    {booking.status === 'completed' && (
-                      <Button variant="primary" size="sm">Laisser un avis</Button>
+                    {booking.status === 'completed' && !booking.rating && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setReviewModal({ isOpen: true, booking })}
+                      >
+                        Laisser un avis
+                      </Button>
+                    )}
+                    {booking.status === 'completed' && booking.rating && (
+                      <span className="flex items-center gap-1 text-sm text-emerald-600">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        Avis envoyé ({booking.rating}/5)
+                      </span>
                     )}
                   </div>
                 </div>
@@ -284,6 +337,15 @@ export default function BookingsPage() {
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal({ isOpen: false, booking: null })}
+        onSubmit={handleSubmitReview}
+        artisanName={reviewModal.booking?.artisan?.fullName || ''}
+        serviceName={categoryLabels[reviewModal.booking?.service?.category || ''] || reviewModal.booking?.service?.name || ''}
+      />
     </div>
   );
 }

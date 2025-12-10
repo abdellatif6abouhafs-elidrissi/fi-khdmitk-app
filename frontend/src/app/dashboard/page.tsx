@@ -73,6 +73,15 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    phone: '',
+    city: '',
+    bio: '',
+    experience: 0,
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -165,6 +174,75 @@ export default function DashboardPage() {
     }
   };
 
+  const handleToggleAvailability = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !profile) return;
+
+    try {
+      const response = await fetch('/api/artisans/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isAvailable: !profile.isAvailable }),
+      });
+
+      if (response.ok) {
+        setProfile(prev => prev ? { ...prev, isAvailable: !prev.isAvailable } : null);
+      }
+    } catch (error) {
+      console.error('Error toggling availability:', error);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (profile) {
+      setEditForm({
+        fullName: profile.fullName,
+        phone: profile.phone,
+        city: profile.city,
+        bio: profile.bio || '',
+        experience: profile.experience,
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setSavingProfile(true);
+    try {
+      const response = await fetch('/api/artisans/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(prev => prev ? {
+          ...prev,
+          fullName: data.user.fullName,
+          phone: data.user.phone,
+          city: data.user.city,
+          bio: data.artisan?.bio || '',
+          experience: data.artisan?.experience || 0,
+        } : null);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   // Calculate stats
   const thisMonthBookings = bookings.filter(b => {
     const bookingDate = new Date(b.createdAt);
@@ -208,18 +286,21 @@ export default function DashboardPage() {
               <p className="text-gray-500 mt-1">Bienvenue, {profile?.fullName}</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-                profile?.isAvailable
-                  ? 'bg-emerald-50 text-emerald-600'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
+              <button
+                onClick={handleToggleAvailability}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-colors ${
+                  profile?.isAvailable
+                    ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
                 <div className={`w-2 h-2 rounded-full ${
                   profile?.isAvailable ? 'bg-emerald-500' : 'bg-gray-400'
                 }`}></div>
                 <span className="text-sm font-medium">
                   {profile?.isAvailable ? 'Disponible' : 'Indisponible'}
                 </span>
-              </div>
+              </button>
               <Link href="/">
                 <Button variant="outline" size="sm">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -538,42 +619,130 @@ export default function DashboardPage() {
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-6">Mon profil</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-semibold text-gray-900">Mon profil</h2>
+              {!isEditing ? (
+                <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Modifier
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={savingProfile}>
+                    Annuler
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveProfile} disabled={savingProfile}>
+                    {savingProfile ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-6">
               {/* Basic Info */}
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Nom complet</label>
-                  <p className="text-gray-900">{profile?.fullName}</p>
+              {isEditing ? (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                    <input
+                      type="text"
+                      value={editForm.fullName}
+                      onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={profile?.email || ''}
+                      disabled
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+                    <select
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                    >
+                      <option value="casablanca">Casablanca</option>
+                      <option value="rabat">Rabat</option>
+                      <option value="marrakech">Marrakech</option>
+                      <option value="fes">Fès</option>
+                      <option value="tangier">Tanger</option>
+                      <option value="agadir">Agadir</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                    <textarea
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none"
+                      placeholder="Décrivez vos services et votre expérience..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Expérience (années)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.experience}
+                      onChange={(e) => setEditForm({ ...editForm, experience: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                  <p className="text-gray-900">{profile?.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Téléphone</label>
-                  <p className="text-gray-900">{profile?.phone}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Ville</label>
-                  <p className="text-gray-900 capitalize">{profile?.city}</p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Nom complet</label>
+                      <p className="text-gray-900">{profile?.fullName}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                      <p className="text-gray-900">{profile?.email}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Téléphone</label>
+                      <p className="text-gray-900">{profile?.phone}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Ville</label>
+                      <p className="text-gray-900 capitalize">{profile?.city}</p>
+                    </div>
+                  </div>
 
-              {/* Bio */}
-              {profile?.bio && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Bio</label>
-                  <p className="text-gray-900">{profile.bio}</p>
-                </div>
+                  {/* Bio */}
+                  {profile?.bio && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Bio</label>
+                      <p className="text-gray-900">{profile.bio}</p>
+                    </div>
+                  )}
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Expérience</label>
+                    <p className="text-gray-900">{profile?.experience} ans</p>
+                  </div>
+                </>
               )}
-
-              {/* Experience */}
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Expérience</label>
-                <p className="text-gray-900">{profile?.experience} ans</p>
-              </div>
 
               {/* Services */}
               <div>

@@ -27,20 +27,32 @@ export function Navbar() {
             <Link href="/" className="text-gray-600 hover:text-emerald-600 transition-colors">
               {t('home')}
             </Link>
-            <Link href="/artisans" className="text-gray-600 hover:text-emerald-600 transition-colors">
-              {t('artisans')}
-            </Link>
-            <Link href="/services" className="text-gray-600 hover:text-emerald-600 transition-colors">
-              {t('services')}
-            </Link>
+            {/* Show Artisans link only for customers or non-logged users */}
+            {(!user || user.role === 'customer') && (
+              <Link href="/artisans" className="text-gray-600 hover:text-emerald-600 transition-colors">
+                {t('artisans')}
+              </Link>
+            )}
             <Link href="/about" className="text-gray-600 hover:text-emerald-600 transition-colors">
               {t('about')}
             </Link>
             <Link href="/contact" className="text-gray-600 hover:text-emerald-600 transition-colors">
               {t('contact')}
             </Link>
-            {user && (
-              <Link href="/bookings" className="text-gray-600 hover:text-emerald-600 transition-colors">
+            {/* Role-based navigation */}
+            {user && user.role === 'artisan' && (
+              <Link href="/dashboard" className="text-emerald-600 font-medium hover:text-emerald-700 transition-colors flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Dashboard
+              </Link>
+            )}
+            {user && user.role === 'customer' && (
+              <Link href="/bookings" className="text-emerald-600 font-medium hover:text-emerald-700 transition-colors flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 {t('bookings')}
               </Link>
             )}
@@ -83,20 +95,31 @@ export function Navbar() {
                     >
                       {t('profile')}
                     </Link>
-                    <Link
-                      href="/bookings"
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      {t('bookings')}
-                    </Link>
-                    {user.role === 'artisan' && (
+                    {user.role === 'artisan' ? (
                       <Link
                         href="/dashboard"
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                        className="block px-4 py-2 text-emerald-600 font-medium hover:bg-emerald-50"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        Dashboard
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                          </svg>
+                          Mon tableau de bord
+                        </span>
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/bookings"
+                        className="block px-4 py-2 text-emerald-600 font-medium hover:bg-emerald-50"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {t('bookings')}
+                        </span>
                       </Link>
                     )}
                     <hr className="my-1 border-gray-100" />
@@ -172,12 +195,19 @@ export function Navbar() {
                   <Link href="/profile" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
                     {t('profile')}
                   </Link>
-                  <Link href="/bookings" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
-                    {t('bookings')}
-                  </Link>
-                  {user.role === 'artisan' && (
-                    <Link href="/dashboard" className="block text-gray-600 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>
-                      Dashboard
+                  {user.role === 'artisan' ? (
+                    <Link href="/dashboard" className="flex items-center gap-2 text-emerald-600 font-medium hover:text-emerald-700" onClick={() => setIsMenuOpen(false)}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                      Mon tableau de bord
+                    </Link>
+                  ) : (
+                    <Link href="/bookings" className="flex items-center gap-2 text-emerald-600 font-medium hover:text-emerald-700" onClick={() => setIsMenuOpen(false)}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {t('bookings')}
                     </Link>
                   )}
                   <button

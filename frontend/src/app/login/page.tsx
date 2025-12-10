@@ -26,10 +26,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      router.push('/');
+      const user = await login(formData.email, formData.password);
+      // Redirect based on role
+      if (user.role === 'artisan') {
+        router.push('/dashboard');
+      } else {
+        router.push('/bookings');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Une erreur est survenue');
+      setError(err.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }

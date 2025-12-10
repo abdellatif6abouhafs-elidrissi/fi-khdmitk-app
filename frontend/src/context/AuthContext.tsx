@@ -16,9 +16,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
-  register: (data: any) => Promise<void>;
+  register: (data: any) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.setItem('token', data.token);
-    setUser({
+    const newUser: User = {
       id: data.user.id,
       email: data.user.email,
       fullName: data.user.fullName,
@@ -87,7 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.user.role,
       avatar: data.user.avatar,
       isVerified: data.user.isVerified,
-    });
+    };
+    setUser(newUser);
+    return newUser;
   };
 
   const logout = () => {
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const register = async (data: any) => {
+  const register = async (data: any): Promise<User> => {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: {
@@ -111,14 +113,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.setItem('token', result.token);
-    setUser({
+    const newUser: User = {
       id: result.user.id,
       email: result.user.email,
       fullName: result.user.fullName,
       phone: result.user.phone,
       city: result.user.city,
       role: result.user.role,
-    });
+    };
+    setUser(newUser);
+    return newUser;
   };
 
   return (

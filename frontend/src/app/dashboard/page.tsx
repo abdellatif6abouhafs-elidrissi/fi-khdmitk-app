@@ -166,10 +166,15 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        // Update local state
+        // Update local bookings state
         setBookings(prev => prev.map(b =>
           b.id === bookingId ? { ...b, status: newStatus } : b
         ));
+
+        // If completed, increment local completedJobs counter
+        if (newStatus === 'completed') {
+          setProfile(prev => prev ? { ...prev, completedJobs: (prev.completedJobs || 0) + 1 } : null);
+        }
       }
     } catch (error) {
       console.error('Error updating booking:', error);

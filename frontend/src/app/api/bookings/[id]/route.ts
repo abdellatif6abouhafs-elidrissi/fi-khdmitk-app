@@ -53,9 +53,18 @@ export async function PATCH(
 
       // If completed, increment artisan's completed jobs
       if (status === 'completed') {
-        await Artisan.findByIdAndUpdate(booking.artisan, {
-          $inc: { completedJobs: 1 }
-        });
+        console.log('Completing booking, artisan ID:', booking.artisan);
+        
+        const updatedArtisan = await Artisan.findByIdAndUpdate(
+          booking.artisan,
+          { $inc: { completedJobs: 1 } },
+          { new: true }
+        );
+        
+        console.log('Updated artisan:', updatedArtisan ? {
+          id: updatedArtisan._id,
+          completedJobs: updatedArtisan.completedJobs
+        } : 'NOT FOUND');
       }
     }
 

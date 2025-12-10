@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         path: 'artisan',
         populate: { path: 'user', select: 'fullName city avatar' }
       })
-      .populate('customer', 'fullName phone city')
+      .populate('customer', 'fullName phone city email')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
         id: b.customer?._id,
         name: b.customer?.fullName,
         phone: b.customer?.phone,
+        city: b.customer?.city,
       },
       service: b.service,
       date: b.date,

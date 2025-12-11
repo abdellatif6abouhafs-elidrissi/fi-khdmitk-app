@@ -24,9 +24,12 @@ const categoryLabels: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== REGISTER API CALLED ===');
     await connectDB();
+    console.log('MongoDB connected');
 
     const body = await request.json();
+    console.log('Registration data:', { email: body.email, fullName: body.fullName, city: body.city });
     const { fullName, email, phone, password, city, role, bio, services, experience } = body;
 
     // Check if user exists
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user
+    console.log('Creating user...');
     const user = await User.create({
       fullName,
       email,
@@ -47,6 +51,7 @@ export async function POST(request: NextRequest) {
       city,
       role: role || 'customer',
     });
+    console.log('User created with ID:', user._id);
 
     // If artisan, create artisan profile
     if (role === 'artisan') {

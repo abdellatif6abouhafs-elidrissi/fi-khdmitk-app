@@ -210,11 +210,33 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    // Clear existing data
-    await User.deleteMany({});
-    await Artisan.deleteMany({});
-    await Booking.deleteMany({});
-    await Review.deleteMany({});
+    // Clear ONLY demo data (preserve real users)
+    // Demo emails end with @demo.com
+    const demoEmails = [
+      'client@demo.com',
+      'ahmed@demo.com',
+      'fatima@demo.com',
+      'youssef@demo.com',
+      'khadija@demo.com',
+      'mohamed@demo.com',
+      'rachid@demo.com',
+      'hassan@demo.com',
+      'omar@demo.com',
+    ];
+
+    // Get IDs of demo users to delete their related data
+    const demoUsers = await User.find({ email: { $in: demoEmails } });
+    const demoUserIds = demoUsers.map(u => u._id);
+
+    // Get IDs of demo artisans
+    const demoArtisans = await Artisan.find({ user: { $in: demoUserIds } });
+    const demoArtisanIds = demoArtisans.map(a => a._id);
+
+    // Delete only demo-related data
+    await Review.deleteMany({ $or: [{ customer: { $in: demoUserIds } }, { artisan: { $in: demoArtisanIds } }] });
+    await Booking.deleteMany({ $or: [{ customer: { $in: demoUserIds } }, { artisan: { $in: demoArtisanIds } }] });
+    await Artisan.deleteMany({ user: { $in: demoUserIds } });
+    await User.deleteMany({ email: { $in: demoEmails } });
 
     // Create a sample customer
     const customer = await User.create({

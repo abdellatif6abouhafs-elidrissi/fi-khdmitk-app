@@ -7,13 +7,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ServiceIcon, serviceCategories } from '@/components/ServiceIcon';
 
+interface ArtisanService {
+  category: string;
+  name: string;
+  price: string;
+}
+
 interface Artisan {
-  _id: string;
+  id: string;
   fullName: string;
   city: string;
   rating: number;
   totalReviews: number;
-  services: string[];
+  services: ArtisanService[];
   isVerified: boolean;
 }
 
@@ -162,10 +168,10 @@ export default function Home() {
               ))
             ) : featuredArtisans.length > 0 ? (
               featuredArtisans.map((artisan) => {
-                const primaryService = artisan.services?.[0] || 'other';
+                const primaryService = artisan.services?.[0]?.category || 'other';
                 const category = serviceCategories.find(c => c.id === primaryService);
                 return (
-                  <Link key={artisan._id} href={`/artisans/${artisan._id}`}>
+                  <Link key={artisan.id} href={`/artisans/${artisan.id}`}>
                     <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">

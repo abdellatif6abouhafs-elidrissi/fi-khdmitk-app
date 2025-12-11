@@ -237,7 +237,6 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        const data = await response.json();
         setProfile(prev => prev ? {
           ...prev,
           fullName: data.user.fullName,

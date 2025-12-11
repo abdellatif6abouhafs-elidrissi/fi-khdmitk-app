@@ -7,16 +7,38 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ServiceIcon, serviceCategories } from '@/components/ServiceIcon';
 
-const featuredArtisans = [
-  { id: 1, name: 'Ahmed Ben Ali', city: 'Casablanca', rating: 4.9, reviews: 127, category: 'plumbing', verified: true },
-  { id: 2, name: 'Fatima Zahra', city: 'Rabat', rating: 4.8, reviews: 98, category: 'electrical', verified: true },
-  { id: 3, name: 'Youssef El Amrani', city: 'Marrakech', rating: 4.7, reviews: 85, category: 'carpentry', verified: false },
-  { id: 4, name: 'Khadija Bennani', city: 'Fès', rating: 4.9, reviews: 156, category: 'cleaning', verified: true },
-];
+interface Artisan {
+  _id: string;
+  fullName: string;
+  city: string;
+  rating: number;
+  totalReviews: number;
+  services: string[];
+  isVerified: boolean;
+}
 
 export default function Home() {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [featuredArtisans, setFeaturedArtisans] = useState<Artisan[]>([]);
+  const [loadingArtisans, setLoadingArtisans] = useState(true);
+
+  useEffect(() => {
+    const fetchArtisans = async () => {
+      try {
+        const response = await fetch('/api/artisans?available=true&limit=4');
+        if (response.ok) {
+          const data = await response.json();
+          setFeaturedArtisans(data.artisans || []);
+        }
+      } catch (error) {
+        console.error('Error fetching artisans:', error);
+      } finally {
+        setLoadingArtisans(false);
+      }
+    };
+    fetchArtisans();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -122,44 +144,67 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredArtisans.map((artisan) => {
-              const category = serviceCategories.find(c => c.id === artisan.category);
-              return (
-                <Link key={artisan.id} href={`/artisans/${artisan.id}`}>
-                  <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                        {artisan.name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1">
-                          <h3 className="font-semibold text-gray-900">{artisan.name}</h3>
-                          {artisan.verified && (
-                            <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">{artisan.city}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`px-3 py-1.5 ${category?.bgColor || 'bg-gray-100'} text-gray-700 text-sm rounded-full flex items-center gap-1.5`}>
-                        <ServiceIcon category={artisan.category} className="w-4 h-4" />
-                        {t(artisan.category as any)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span className="font-medium">{artisan.rating}</span>
-                        <span className="text-gray-400 text-sm">({artisan.reviews})</span>
-                      </div>
+            {loadingArtisans ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 animate-pulse">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 bg-gray-200 rounded-xl" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
-                </Link>
-              );
-            })}
+                  <div className="flex items-center justify-between">
+                    <div className="h-6 bg-gray-200 rounded-full w-20" />
+                    <div className="h-4 bg-gray-200 rounded w-16" />
+                  </div>
+                </div>
+              ))
+            ) : featuredArtisans.length > 0 ? (
+              featuredArtisans.map((artisan) => {
+                const primaryService = artisan.services?.[0] || 'other';
+                const category = serviceCategories.find(c => c.id === primaryService);
+                return (
+                  <Link key={artisan._id} href={`/artisans/${artisan._id}`}>
+                    <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                          {artisan.fullName.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1">
+                            <h3 className="font-semibold text-gray-900">{artisan.fullName}</h3>
+                            {artisan.isVerified && (
+                              <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">{artisan.city}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`px-3 py-1.5 ${category?.bgColor || 'bg-gray-100'} text-gray-700 text-sm rounded-full flex items-center gap-1.5`}>
+                          <ServiceIcon category={primaryService} className="w-4 h-4" />
+                          {t(primaryService as any)}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span className="font-medium">{artisan.rating?.toFixed(1) || '0.0'}</span>
+                          <span className="text-gray-400 text-sm">({artisan.totalReviews || 0})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="col-span-4 text-center py-8 text-gray-500">
+                Aucun artisan disponible pour le moment
+              </div>
+            )}
           </div>
         </div>
       </section>

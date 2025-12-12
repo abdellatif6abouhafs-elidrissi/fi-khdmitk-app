@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Verify email error:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur lors de la vérification' },
       { status: 500 }

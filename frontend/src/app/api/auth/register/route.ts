@@ -26,12 +26,9 @@ const categoryLabels: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== REGISTER API CALLED ===');
     await connectDB();
-    console.log('MongoDB connected');
 
     const body = await request.json();
-    console.log('Registration data:', { email: body.email, fullName: body.fullName, city: body.city });
     const { fullName, email, phone, password, city, role, bio, services, experience } = body;
 
     // Check if user exists
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user
-    console.log('Creating user...');
     const user = await User.create({
       fullName,
       email,
@@ -53,7 +49,6 @@ export async function POST(request: NextRequest) {
       city,
       role: role || 'customer',
     });
-    console.log('User created with ID:', user._id);
 
     // If artisan, create artisan profile
     if (role === 'artisan') {
@@ -97,13 +92,8 @@ export async function POST(request: NextRequest) {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
     });
 
-    // Send verification email
-    const emailResult = await sendVerificationEmail(email, code, fullName);
-
-    if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error);
-      // Don't fail registration, but log the error
-    }
+    // Send verification email (don't fail registration if email fails)
+    await sendVerificationEmail(email, code, fullName);
 
     // Generate token (user still needs to verify email)
     const token = jwt.sign(
@@ -127,7 +117,6 @@ export async function POST(request: NextRequest) {
       token,
     });
   } catch (error: any) {
-    console.error('Register error:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur lors de l\'inscription' },
       { status: 500 }

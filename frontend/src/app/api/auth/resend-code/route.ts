@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
       message: 'Un nouveau code de vérification a été envoyé à votre email',
     });
   } catch (error: any) {
-    console.error('Resend code error:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

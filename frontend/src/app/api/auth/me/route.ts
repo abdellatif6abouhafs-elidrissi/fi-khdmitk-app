@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       artisan: artisanData,
     });
   } catch (error: any) {
-    console.error('Get me error:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

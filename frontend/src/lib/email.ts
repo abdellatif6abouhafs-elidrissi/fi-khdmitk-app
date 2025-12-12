@@ -1,9 +1,3 @@
-// EmailJS configuration
-const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_5wurgdr';
-const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || 'template_vrng9is';
-const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '7y9-f1BpOUAQvDxyc';
-const EMAILJS_PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY || 'MWx0VHBeRgFX_F6SMFdAS';
-
 // Generate 6-digit verification code
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -15,6 +9,17 @@ export async function sendVerificationEmail(
   code: string,
   fullName: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Get environment variables at runtime (important for Vercel serverless)
+  const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_5wurgdr';
+  const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || 'template_vrng9is';
+  const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '7y9-f1BpOUAQvDxyc';
+  const EMAILJS_PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY || 'MWx0VHBeRgFX_F6SMFdAS';
+
+  console.log('=== SENDING VERIFICATION EMAIL ===');
+  console.log('To:', email);
+  console.log('Service ID:', EMAILJS_SERVICE_ID);
+  console.log('Template ID:', EMAILJS_TEMPLATE_ID);
+
   try {
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
@@ -39,12 +44,14 @@ export async function sendVerificationEmail(
     console.log('EmailJS response:', responseText);
 
     if (response.ok || response.status === 200) {
+      console.log('=== EMAIL SENT SUCCESSFULLY ===');
       return { success: true };
     } else {
+      console.error('=== EMAIL SEND FAILED ===', responseText);
       return { success: false, error: responseText || 'Failed to send email' };
     }
   } catch (error: any) {
-    console.error('EmailJS error:', error);
+    console.error('=== EMAIL ERROR ===', error);
     return { success: false, error: error.message || 'Failed to send email' };
   }
 }

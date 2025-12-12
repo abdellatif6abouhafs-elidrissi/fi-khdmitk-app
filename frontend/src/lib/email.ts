@@ -1,45 +1,47 @@
-import emailjs from '@emailjs/nodejs';
-
 // EmailJS configuration
 const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_6izrbyg';
 const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || 'template_vrng9is';
 const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || 'gHMkjU3VqkT1916z3';
-const EMAILJS_PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY || '';
+const EMAILJS_PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY || 'MWx0VHBeRgFX_F6SMFdAS';
 
 // Generate 6-digit verification code
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Send verification email using EmailJS
+// Send verification email using EmailJS REST API
 export async function sendVerificationEmail(
   email: string,
   code: string,
   fullName: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const templateParams = {
-      to_email: email,
-      to_name: fullName,
-      verification_code: code,
-    };
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        accessToken: EMAILJS_PRIVATE_KEY,
+        template_params: {
+          to_email: email,
+          to_name: fullName,
+          verification_code: code,
+        },
+      }),
+    });
 
-    const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      templateParams,
-      {
-        publicKey: EMAILJS_PUBLIC_KEY,
-        privateKey: EMAILJS_PRIVATE_KEY,
-      }
-    );
+    console.log('EmailJS response status:', response.status);
+    const responseText = await response.text();
+    console.log('EmailJS response:', responseText);
 
-    console.log('EmailJS response:', response);
-
-    if (response.status === 200) {
+    if (response.ok || response.status === 200) {
       return { success: true };
     } else {
-      return { success: false, error: 'Failed to send email' };
+      return { success: false, error: responseText || 'Failed to send email' };
     }
   } catch (error: any) {
     console.error('EmailJS error:', error);
@@ -47,12 +49,11 @@ export async function sendVerificationEmail(
   }
 }
 
-// Send password reset email using EmailJS
+// Send password reset email
 export async function sendPasswordResetEmail(
   email: string,
   code: string,
   fullName: string
 ): Promise<{ success: boolean; error?: string }> {
-  // Use the same function for now - can create separate template later
   return sendVerificationEmail(email, code, fullName);
 }

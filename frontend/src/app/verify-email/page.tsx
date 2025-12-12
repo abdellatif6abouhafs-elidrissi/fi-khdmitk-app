@@ -27,38 +27,62 @@ function VerifyEmailContent() {
     }
   }, [countdown]);
 
-  // Handle input change
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1) {
-      // Handle paste
-      const digits = value.replace(/\D/g, '').slice(0, 6).split('');
-      const newCode = [...code];
+  // Handle paste event
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text');
+    const digits = pastedData.replace(/\D/g, '').slice(0, 6).split('');
+
+    if (digits.length > 0) {
+      const newCode = ['', '', '', '', '', ''];
       digits.forEach((digit, i) => {
-        if (index + i < 6) {
-          newCode[index + i] = digit;
+        if (i < 6) {
+          newCode[i] = digit;
         }
       });
       setCode(newCode);
-      // Focus last filled input or next empty one
-      const nextIndex = Math.min(index + digits.length, 5);
-      inputRefs.current[nextIndex]?.focus();
-    } else {
-      // Single digit
-      const newCode = [...code];
-      newCode[index] = value.replace(/\D/g, '');
-      setCode(newCode);
-
-      // Auto-focus next input
-      if (value && index < 5) {
-        inputRefs.current[index + 1]?.focus();
-      }
+      // Focus the last filled input or the next empty one
+      const focusIndex = Math.min(digits.length, 5);
+      setTimeout(() => inputRefs.current[focusIndex]?.focus(), 0);
     }
   };
 
-  // Handle backspace
+  // Handle input change - single digit only
+  const handleChange = (index: number, value: string) => {
+    // Only take the first digit entered
+    const digit = value.replace(/\D/g, '').slice(0, 1);
+
+    const newCode = [...code];
+    newCode[index] = digit;
+    setCode(newCode);
+
+    // Auto-focus next input
+    if (digit && index < 5) {
+      setTimeout(() => inputRefs.current[index + 1]?.focus(), 0);
+    }
+  };
+
+  // Handle keydown for navigation
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const newCode = [...code];
+      if (code[index]) {
+        // Clear current input
+        newCode[index] = '';
+        setCode(newCode);
+      } else if (index > 0) {
+        // Go back and clear previous
+        newCode[index - 1] = '';
+        setCode(newCode);
+        setTimeout(() => inputRefs.current[index - 1]?.focus(), 0);
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault();
       inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      e.preventDefault();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
@@ -70,14 +94,22 @@ function VerifyEmailContent() {
       return;
     }
 
+    if (!email) {
+      setError('Email manquant. Veuillez retourner à la page d\'inscription.');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
+    // Decode email in case it's URL encoded
+    const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
 
     try {
       const response = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: fullCode }),
+        body: JSON.stringify({ email: decodedEmail, code: fullCode }),
       });
 
       const data = await response.json();
@@ -88,9 +120,9 @@ function VerifyEmailContent() {
 
       setSuccess('Email vérifié avec succès!');
 
-      // Redirect after 2 seconds
+      // Redirect to home after 2 seconds (use window.location to refresh auth state)
       setTimeout(() => {
-        router.push('/login?verified=true');
+        window.location.href = '/';
       }, 2000);
     } catch (err: any) {
       setError(err.message);
@@ -103,14 +135,21 @@ function VerifyEmailContent() {
   const handleResend = async () => {
     if (countdown > 0) return;
 
+    if (!email) {
+      setError('Email manquant. Veuillez retourner à la page d\'inscription.');
+      return;
+    }
+
     setResendLoading(true);
     setError('');
+
+    const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
 
     try {
       const response = await fetch('/api/auth/resend-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: decodedEmail }),
       });
 
       const data = await response.json();
@@ -123,19 +162,14 @@ function VerifyEmailContent() {
       setCountdown(60); // 60 seconds countdown
       setCode(['', '', '', '', '', '']);
       setTimeout(() => setSuccess(''), 3000);
+      // Focus first input
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setResendLoading(false);
     }
   };
-
-  // Auto-submit when code is complete
-  useEffect(() => {
-    if (code.every((digit) => digit !== '') && code.join('').length === 6) {
-      handleVerify();
-    }
-  }, [code]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -177,19 +211,22 @@ function VerifyEmailContent() {
             <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
               Entrez le code à 6 chiffres
             </label>
-            <div className="flex justify-center gap-2 sm:gap-3">
+            <div className="flex justify-center gap-2 sm:gap-3" dir="ltr" onPaste={handlePaste}>
               {code.map((digit, index) => (
                 <input
                   key={index}
                   ref={(el) => { inputRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
-                  maxLength={6}
+                  pattern="[0-9]*"
+                  maxLength={1}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
                   className="w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   disabled={loading}
+                  autoComplete="one-time-code"
                 />
               ))}
             </div>

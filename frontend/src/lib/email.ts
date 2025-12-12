@@ -1,7 +1,7 @@
 // EmailJS configuration
-const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_6izrbyg';
+const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_5wurgdr';
 const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || 'template_vrng9is';
-const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || 'gHMkjU3VqkT1916z3';
+const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '7y9-f1BpOUAQvDxyc';
 const EMAILJS_PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY || 'MWx0VHBeRgFX_F6SMFdAS';
 
 // Generate 6-digit verification code

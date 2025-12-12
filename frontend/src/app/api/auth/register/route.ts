@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Artisan from '@/models/Artisan';
+import VerificationCode from '@/models/VerificationCode';
+import { generateVerificationCode, sendVerificationEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fi-khidmatik-secret';
@@ -81,7 +83,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Generate token
+    // Generate verification code
+    const code = generateVerificationCode();
+
+    // Delete any existing verification codes for this email
+    await VerificationCode.deleteMany({ email: email.toLowerCase() });
+
+    // Save verification code
+    await VerificationCode.create({
+      email: email.toLowerCase(),
+      code,
+      type: 'email_verification',
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+    });
+
+    // Send verification email
+    const emailResult = await sendVerificationEmail(email, code, fullName);
+
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      // Don't fail registration, but log the error
+    }
+
+    // Generate token (user still needs to verify email)
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       JWT_SECRET,
@@ -89,7 +113,8 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      message: 'Inscription réussie',
+      message: 'Inscription réussie. Un code de vérification a été envoyé à votre email.',
+      requiresVerification: true,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -97,6 +122,7 @@ export async function POST(request: NextRequest) {
         phone: user.phone,
         city: user.city,
         role: user.role,
+        isVerified: false,
       },
       token,
     });

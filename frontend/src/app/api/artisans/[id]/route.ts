@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Artisan from '@/models/Artisan';
 import Review from '@/models/Review';
+import User from '@/models/User';
 import mongoose from 'mongoose';
+
+// Ensure User model is registered for populate
+void User;
 
 export async function GET(
   request: NextRequest,

@@ -117,18 +117,23 @@ function RegisterContent() {
         throw new Error(data.error || 'Une erreur est survenue');
       }
 
-      // Save token and redirect
+      // Save token
       localStorage.setItem('token', data.token);
 
-      // Redirect based on role
-      if (role === 'artisan') {
-        router.push('/dashboard');
+      // Check if email verification is required
+      if (data.requiresVerification) {
+        // Redirect to verification page
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
-        router.push('/');
+        // Redirect based on role
+        if (role === 'artisan') {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
+        // Force page reload to update auth state
+        window.location.reload();
       }
-
-      // Force page reload to update auth state
-      window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue');
     } finally {

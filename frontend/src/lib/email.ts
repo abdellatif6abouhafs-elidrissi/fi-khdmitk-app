@@ -15,7 +15,7 @@ export async function sendVerificationEmail(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await resend.emails.send({
-      from: 'Fi Khidmatik <noreply@fi-khidmatik.com>',
+      from: 'Fi Khidmatik <onboarding@resend.dev>',
       to: email,
       subject: 'Vérifiez votre email - Fi Khidmatik',
       html: `
@@ -83,7 +83,7 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await resend.emails.send({
-      from: 'Fi Khidmatik <noreply@fi-khidmatik.com>',
+      from: 'Fi Khidmatik <onboarding@resend.dev>',
       to: email,
       subject: 'Réinitialisation de mot de passe - Fi Khidmatik',
       html: `

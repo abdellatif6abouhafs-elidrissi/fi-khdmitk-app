@@ -5,6 +5,7 @@ import Artisan from '@/models/Artisan';
 import Review from '@/models/Review';
 import User from '@/models/User';
 import { createNotification, notificationMessages } from '@/lib/notifications';
+import { sendBookingNotificationEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
@@ -81,6 +82,16 @@ export async function PATCH(
             message: msg.message,
             data: { bookingId: booking._id.toString(), artisanId: booking.artisan.toString() },
           });
+          // Send email notification to customer
+          await sendBookingNotificationEmail({
+            toEmail: customer.email,
+            toName: customer.fullName,
+            bookingDate: booking.date,
+            bookingTime: booking.time,
+            serviceName: serviceName,
+            artisanName: artisanUser?.fullName || 'Artisan',
+            status: 'confirmed',
+          });
         } else if (status === 'completed' && customer) {
           const msg = notificationMessages.booking_completed(artisanUser?.fullName || 'Artisan');
           await createNotification({
@@ -89,6 +100,16 @@ export async function PATCH(
             title: msg.title,
             message: msg.message,
             data: { bookingId: booking._id.toString(), artisanId: booking.artisan.toString() },
+          });
+          // Send email notification to customer
+          await sendBookingNotificationEmail({
+            toEmail: customer.email,
+            toName: customer.fullName,
+            bookingDate: booking.date,
+            bookingTime: booking.time,
+            serviceName: serviceName,
+            artisanName: artisanUser?.fullName || 'Artisan',
+            status: 'completed',
           });
         } else if (status === 'cancelled') {
           // Notify the other party about cancellation
@@ -105,6 +126,19 @@ export async function PATCH(
               message: msg.message,
               data: { bookingId: booking._id.toString() },
             });
+            // Send email notification
+            const notifyUser = isArtisanCancelling ? customer : artisanUser;
+            if (notifyUser?.email) {
+              await sendBookingNotificationEmail({
+                toEmail: notifyUser.email,
+                toName: notifyUser.fullName,
+                bookingDate: booking.date,
+                bookingTime: booking.time,
+                serviceName: serviceName,
+                status: 'cancelled',
+                message: `La réservation a été annulée par ${cancellerName}`,
+              });
+            }
           }
         }
       }

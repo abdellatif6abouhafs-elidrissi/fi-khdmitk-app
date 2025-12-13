@@ -67,6 +67,54 @@ export async function GET(request: NextRequest) {
 
     const totalRevenue = revenueData[0]?.total || 0;
 
+    // Get monthly stats for charts (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [monthlyBookings, monthlyRevenue] = await Promise.all([
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: twelveMonthsAgo } } },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+      ]),
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: twelveMonthsAgo }, status: 'completed' } },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            total: { $sum: '$totalPrice' },
+          },
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+      ]),
+    ]);
+
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+    const chartData = {
+      bookings: [] as { month: string; count: number }[],
+      revenue: [] as { month: string; total: number }[],
+    };
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - 11 + i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+
+      const bookingData = monthlyBookings.find((b: any) => b._id.year === year && b._id.month === month);
+      const revenueDataMonth = monthlyRevenue.find((r: any) => r._id.year === year && r._id.month === month);
+
+      chartData.bookings.push({ month: monthNames[month - 1], count: bookingData?.count || 0 });
+      chartData.revenue.push({ month: monthNames[month - 1], total: revenueDataMonth?.total || 0 });
+    }
+
     return NextResponse.json({
       stats: {
         totalUsers,
@@ -80,6 +128,7 @@ export async function GET(request: NextRequest) {
       },
       recentBookings,
       recentUsers,
+      chartData,
     });
   } catch (error: any) {
     console.error('Admin dashboard error:', error);

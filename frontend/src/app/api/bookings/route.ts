@@ -4,6 +4,7 @@ import Booking from '@/models/Booking';
 import Artisan from '@/models/Artisan';
 import User from '@/models/User';
 import { createNotification, notificationMessages } from '@/lib/notifications';
+import { sendBookingNotificationEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fi-khidmatik-secret';

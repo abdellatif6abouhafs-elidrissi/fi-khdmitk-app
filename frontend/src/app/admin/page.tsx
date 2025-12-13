@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { fetchExportData, exportToExcel, exportToPDF, ExportType } from '@/lib/export';
 
 interface Stats {
   totalUsers: number;
@@ -32,11 +33,37 @@ interface RecentUser {
   isVerified: boolean;
 }
 
+
+interface ChartData {
+  bookings: { month: string; count: number }[];
+  revenue: { month: string; total: number }[];
+}
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  const handleExport = async (type: ExportType, format: 'excel' | 'pdf') => {
+    setExporting(`${type}-${format}`);
+    try {
+      const data = await fetchExportData(type);
+      const filename = `fi-khidmatik-${type}-${new Date().toISOString().split('T')[0]}`;
+      
+      if (format === 'excel') {
+        exportToExcel(data, filename);
+      } else {
+        exportToPDF(data, filename, 'Fi Khidmatik - Rapport');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Erreur lors de l'export');
+    } finally {
+      setExporting(null);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -52,6 +79,7 @@ export default function AdminDashboard() {
       setStats(data.stats);
       setRecentBookings(data.recentBookings || []);
       setRecentUsers(data.recentUsers || []);
+      setChartData(data.chartData || null);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -151,6 +179,78 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Export Section */}
+      <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Exporter les données</h3>
+            <p className="text-sm text-gray-400">Téléchargez les rapports en Excel ou PDF</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative group">
+              <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Exporter
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="absolute right-0 mt-2 w-56 bg-gray-700 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20">
+                <div className="p-2">
+                  <p className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Excel (.xlsx)</p>
+                  <button
+                    onClick={() => handleExport('all', 'excel')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'all-excel' ? 'Export en cours...' : 'Toutes les données'}
+                  </button>
+                  <button
+                    onClick={() => handleExport('users', 'excel')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'users-excel' ? 'Export en cours...' : 'Utilisateurs'}
+                  </button>
+                  <button
+                    onClick={() => handleExport('artisans', 'excel')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'artisans-excel' ? 'Export en cours...' : 'Artisans'}
+                  </button>
+                  <button
+                    onClick={() => handleExport('bookings', 'excel')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'bookings-excel' ? 'Export en cours...' : 'Réservations'}
+                  </button>
+                  <hr className="my-2 border-gray-600" />
+                  <p className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase">PDF</p>
+                  <button
+                    onClick={() => handleExport('all', 'pdf')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'all-pdf' ? 'Export en cours...' : 'Rapport complet'}
+                  </button>
+                  <button
+                    onClick={() => handleExport('bookings', 'pdf')}
+                    disabled={exporting !== null}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {exporting === 'bookings-pdf' ? 'Export en cours...' : 'Réservations'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, index) => (
@@ -176,44 +276,54 @@ export default function AdminDashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bookings Chart Placeholder */}
+        {/* Bookings Chart - Real Data */}
         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Réservations par mois</h3>
           <div className="h-64 flex items-end justify-between gap-2 px-4">
-            {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 100].map((height, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-500 hover:from-emerald-500 hover:to-emerald-300"
-                  style={{ height: `${height}%` }}
-                ></div>
-                <span className="text-xs text-gray-500">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][index]}
-                </span>
-              </div>
-            ))}
+            {chartData?.bookings.map((item, index) => {
+              const maxCount = Math.max(...(chartData?.bookings.map(b => b.count) || [1]), 1);
+              const height = (item.count / maxCount) * 100;
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2 group relative">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    {item.count} réservations
+                  </div>
+                  <div
+                    className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-500 hover:from-emerald-500 hover:to-emerald-300"
+                    style={{ height: `${Math.max(height, 2)}%` }}
+                  ></div>
+                  <span className="text-xs text-gray-500">{item.month}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Revenue Chart Placeholder */}
+        {/* Revenue Chart - Real Data */}
         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Revenus par mois</h3>
           <div className="h-64 flex items-end justify-between gap-2 px-4">
-            {[30, 55, 40, 70, 50, 85, 65, 75, 55, 90, 70, 95].map((height, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-amber-600 to-amber-400 rounded-t-lg transition-all duration-500 hover:from-amber-500 hover:to-amber-300"
-                  style={{ height: `${height}%` }}
-                ></div>
-                <span className="text-xs text-gray-500">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][index]}
-                </span>
-              </div>
-            ))}
+            {chartData?.revenue.map((item, index) => {
+              const maxTotal = Math.max(...(chartData?.revenue.map(r => r.total) || [1]), 1);
+              const height = (item.total / maxTotal) * 100;
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2 group relative">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    {item.total.toLocaleString()} MAD
+                  </div>
+                  <div
+                    className="w-full bg-gradient-to-t from-amber-600 to-amber-400 rounded-t-lg transition-all duration-500 hover:from-amber-500 hover:to-amber-300"
+                    style={{ height: `${Math.max(height, 2)}%` }}
+                  ></div>
+                  <span className="text-xs text-gray-500">{item.month}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Tables Row */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Bookings */}
         <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">

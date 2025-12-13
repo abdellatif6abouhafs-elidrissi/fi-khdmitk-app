@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Artisan from '@/models/Artisan';
+import User from '@/models/User';
+import { createNotification, notificationMessages } from '@/lib/notifications';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fi-khidmatik-secret';
@@ -118,6 +120,27 @@ export async function POST(request: NextRequest) {
       urgency: urgency || 'normal',
       status: 'pending',
     });
+
+    // Send notification to artisan about new booking
+    const artisan = await Artisan.findById(artisanId);
+    const customer = await User.findById(user.userId);
+
+    if (artisan && customer) {
+      const msg = notificationMessages.booking_new(
+        customer.fullName,
+        service?.name || 'service'
+      );
+      await createNotification({
+        userId: artisan.user.toString(),
+        type: 'booking_new',
+        title: msg.title,
+        message: msg.message,
+        data: {
+          bookingId: booking._id.toString(),
+          customerId: user.userId,
+        },
+      });
+    }
 
     return NextResponse.json({
       message: 'Réservation créée avec succès',

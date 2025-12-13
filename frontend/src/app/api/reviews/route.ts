@@ -4,6 +4,8 @@ import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Artisan from '@/models/Artisan';
 import Booking from '@/models/Booking';
+import User from '@/models/User';
+import { createNotification, notificationMessages } from '@/lib/notifications';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fi-khidmatik-secret';
 
@@ -125,6 +127,24 @@ export async function POST(request: NextRequest) {
     booking.rating = rating;
     booking.review = comment;
     await booking.save();
+
+    // Send notification to artisan about new review
+    const artisan = await Artisan.findById(artisanId);
+    const customer = await User.findById(decoded.userId);
+
+    if (artisan && customer) {
+      const msg = notificationMessages.review_received(customer.fullName, rating);
+      await createNotification({
+        userId: artisan.user.toString(),
+        type: 'review_received',
+        title: msg.title,
+        message: msg.message,
+        data: {
+          bookingId,
+          customerId: decoded.userId,
+        },
+      });
+    }
 
     return NextResponse.json({
       message: 'Avis ajouté avec succès',

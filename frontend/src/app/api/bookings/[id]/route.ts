@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Artisan from '@/models/Artisan';
 import Review from '@/models/Review';
+import User from '@/models/User';
+import { createNotification, notificationMessages } from '@/lib/notifications';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
@@ -51,6 +53,7 @@ export async function PATCH(
 
     // Update status
     if (status) {
+      const oldStatus = booking.status;
       booking.status = status;
 
       // If completed, increment artisan's completed jobs
@@ -60,6 +63,50 @@ export async function PATCH(
           { $inc: { completedJobs: 1 } },
           { new: true }
         );
+      }
+
+      // Create notifications for status changes
+      if (status !== oldStatus) {
+        const artisan = await Artisan.findById(booking.artisan).populate('user', 'fullName');
+        const customer = await User.findById(booking.customer);
+        const artisanUser = artisan?.user as any;
+        const serviceName = booking.service?.name || 'service';
+
+        if (status === 'confirmed' && customer) {
+          const msg = notificationMessages.booking_confirmed(artisanUser?.fullName || 'Artisan');
+          await createNotification({
+            userId: booking.customer.toString(),
+            type: 'booking_confirmed',
+            title: msg.title,
+            message: msg.message,
+            data: { bookingId: booking._id.toString(), artisanId: booking.artisan.toString() },
+          });
+        } else if (status === 'completed' && customer) {
+          const msg = notificationMessages.booking_completed(artisanUser?.fullName || 'Artisan');
+          await createNotification({
+            userId: booking.customer.toString(),
+            type: 'booking_completed',
+            title: msg.title,
+            message: msg.message,
+            data: { bookingId: booking._id.toString(), artisanId: booking.artisan.toString() },
+          });
+        } else if (status === 'cancelled') {
+          // Notify the other party about cancellation
+          const isArtisanCancelling = user.role === 'artisan';
+          const notifyUserId = isArtisanCancelling ? booking.customer.toString() : artisanUser?._id?.toString();
+          const cancellerName = isArtisanCancelling ? (artisanUser?.fullName || 'Artisan') : (customer?.fullName || 'Client');
+
+          if (notifyUserId) {
+            const msg = notificationMessages.booking_cancelled(cancellerName, isArtisanCancelling);
+            await createNotification({
+              userId: notifyUserId,
+              type: 'booking_cancelled',
+              title: msg.title,
+              message: msg.message,
+              data: { bookingId: booking._id.toString() },
+            });
+          }
+        }
       }
     }
 

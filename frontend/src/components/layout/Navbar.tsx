@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export function Navbar() {
   const { t, lang, setLang, isRTL } = useLanguage();
@@ -67,6 +68,9 @@ export function Navbar() {
             >
               {lang === 'fr' ? 'العربية' : 'Français'}
             </button>
+
+            {/* Notification Bell */}
+            {user && <NotificationBell />}
 
             {/* Auth Buttons */}
             {user ? (

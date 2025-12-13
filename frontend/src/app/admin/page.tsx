@@ -17,7 +17,7 @@ interface RecentBooking {
   _id: string;
   customer: { fullName: string };
   artisan: { user: { fullName: string } };
-  service: string;
+  service: { category?: string; name?: string; price?: number } | string;
   status: string;
   date: string;
   totalPrice: number;
@@ -243,7 +243,9 @@ export default function AdminDashboard() {
                         <p className="text-sm font-medium text-white">{booking.customer?.fullName || 'N/A'}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-400">{booking.service}</p>
+                        <p className="text-sm text-gray-400">
+                          {typeof booking.service === 'object' ? booking.service?.name || booking.service?.category || 'Service' : booking.service}
+                        </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(booking.status)}`}>

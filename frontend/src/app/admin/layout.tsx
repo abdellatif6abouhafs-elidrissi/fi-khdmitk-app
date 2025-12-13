@@ -66,24 +66,23 @@ const menuItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Check if user is admin
-    if (user === null) {
-      setLoading(false);
-      router.push('/login');
-    } else if (user && user.role !== 'admin') {
-      router.push('/');
-    } else if (user) {
-      setLoading(false);
+    // Wait for auth to finish loading before making decisions
+    if (!isLoading) {
+      if (!user) {
+        router.push('/login');
+      } else if (user.role !== 'admin') {
+        router.push('/');
+      }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
-  if (loading) {
+  // Show loading while auth is checking or user hasn't been confirmed as admin
+  if (isLoading || !user || user.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>

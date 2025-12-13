@@ -16,11 +16,8 @@ export async function sendVerificationEmail(
   const privateKey = process.env.EMAILJS_PRIVATE_KEY;
 
   if (!serviceId || !templateId || !publicKey || !privateKey) {
-    console.error('EMAIL CONFIG MISSING:', { serviceId: !!serviceId, templateId: !!templateId, publicKey: !!publicKey, privateKey: !!privateKey });
     return { success: false, error: 'Email configuration missing' };
   }
-
-  console.log('Sending email to:', email);
 
   try {
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -41,12 +38,10 @@ export async function sendVerificationEmail(
       }),
     });
 
-    const responseText = await response.text();
-    console.log('EmailJS Response:', response.status, responseText);
-
     if (response.ok || response.status === 200) {
       return { success: true };
     } else {
+      const responseText = await response.text();
       return { success: false, error: responseText || 'Failed to send email' };
     }
   } catch (error: any) {

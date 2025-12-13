@@ -1,4 +1,5 @@
 import Notification from '@/models/Notification';
+import { sendPushNotification } from './push';
 
 interface CreateNotificationParams {
   userId: string;

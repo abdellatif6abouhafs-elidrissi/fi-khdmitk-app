@@ -6,7 +6,7 @@ interface Booking {
   _id: string;
   customer: { fullName: string; email: string; phone: string };
   artisan: { user: { fullName: string } };
-  service: string;
+  service: { category?: string; name?: string; price?: number } | string;
   description: string;
   date: string;
   time: string;
@@ -211,7 +211,9 @@ export default function AdminBookingsPage() {
                       <p className="text-sm text-gray-300">{booking.artisan?.user?.fullName || 'N/A'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-300">{booking.service}</p>
+                      <p className="text-sm text-gray-300">
+                        {typeof booking.service === 'object' ? booking.service?.name || booking.service?.category || 'Service' : booking.service}
+                      </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-sm text-gray-300">
@@ -317,7 +319,9 @@ export default function AdminBookingsPage() {
               <div>
                 <p className="text-gray-400 text-sm mb-2">Service</p>
                 <div className="bg-gray-700/50 rounded-xl p-4">
-                  <p className="text-white font-medium">{selectedBooking.service}</p>
+                  <p className="text-white font-medium">
+                    {typeof selectedBooking.service === 'object' ? selectedBooking.service?.name || selectedBooking.service?.category || 'Service' : selectedBooking.service}
+                  </p>
                   <p className="text-sm text-gray-400 mt-1">{selectedBooking.description}</p>
                 </div>
               </div>

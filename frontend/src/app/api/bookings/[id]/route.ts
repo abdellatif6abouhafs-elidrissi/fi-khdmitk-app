@@ -86,7 +86,7 @@ export async function PATCH(
           await sendBookingNotificationEmail({
             toEmail: customer.email,
             toName: customer.fullName,
-            bookingDate: booking.date,
+            bookingDate: booking.date?.toLocaleDateString?.() || String(booking.date),
             bookingTime: booking.time,
             serviceName: serviceName,
             artisanName: artisanUser?.fullName || 'Artisan',
@@ -105,7 +105,7 @@ export async function PATCH(
           await sendBookingNotificationEmail({
             toEmail: customer.email,
             toName: customer.fullName,
-            bookingDate: booking.date,
+            bookingDate: booking.date?.toLocaleDateString?.() || String(booking.date),
             bookingTime: booking.time,
             serviceName: serviceName,
             artisanName: artisanUser?.fullName || 'Artisan',
@@ -132,7 +132,7 @@ export async function PATCH(
               await sendBookingNotificationEmail({
                 toEmail: notifyUser.email,
                 toName: notifyUser.fullName,
-                bookingDate: booking.date,
+                bookingDate: booking.date?.toLocaleDateString?.() || String(booking.date),
                 bookingTime: booking.time,
                 serviceName: serviceName,
                 status: 'cancelled',

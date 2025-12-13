@@ -162,7 +162,7 @@ export async function POST(
 
     return NextResponse.json({
       message: {
-        id: savedMessage._id,
+        id: (savedMessage as any)._id,
         sender: savedMessage.sender,
         content: savedMessage.content,
         createdAt: savedMessage.createdAt,

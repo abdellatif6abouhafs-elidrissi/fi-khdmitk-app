@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
-    url: 'https://frontend-seven-gamma-60.vercel.app',
+    url: 'https://fi-khidmatik.vercel.app',
     cleartext: true
   },
   android: {
